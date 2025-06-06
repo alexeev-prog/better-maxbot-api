@@ -1,0 +1,11 @@
+# AudioAttachment
+
+## Properties
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**payload** | [**MediaAttachmentPayload**](MediaAttachmentPayload.md) |  | 
+**transcription** | **str** | Audio transcription | [optional] 
+
+[[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
+
+

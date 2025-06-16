@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
 class OacUtils:
-
     @staticmethod
     def escape(s, quote=True):
         """
@@ -15,5 +14,5 @@ class OacUtils:
             s = s.replace(">", "&gt;")
             if quote:
                 s = s.replace('"', "&quot;")
-                s = s.replace('\'', "&#x27;")
+                s = s.replace("'", "&#x27;")
         return s

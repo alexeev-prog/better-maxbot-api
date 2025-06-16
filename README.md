@@ -1,5 +1,5 @@
-# Max Bot API Client library for Python
-
+# Max Bot API better
+Просто для демонстрации изменений линтеров и форматеров.
 
 ## Документация
 

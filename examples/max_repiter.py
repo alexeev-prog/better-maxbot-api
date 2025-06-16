@@ -7,7 +7,6 @@ from max_client.cmn import ExtList
 
 
 class ChatActionRequestRepeater(threading.Thread):
-
     def __init__(self, chats_api, chat_id):
         # type: (ChatsApi, int) -> None
         super(ChatActionRequestRepeater, self).__init__(daemon=True)
@@ -16,7 +15,9 @@ class ChatActionRequestRepeater(threading.Thread):
         self.stopped = False
 
         if not isinstance(chats_api, ChatsApi):
-            raise ValueError("Invalid value for `chats_api`, must not be `ChatsApi` type")  # noqa: E501
+            raise ValueError(
+                "Invalid value for `chats_api`, must not be `ChatsApi` type"
+            )  # noqa: E501
         if chat_id is None:
             raise ValueError("Invalid value for `chat_id`, must not be `None`")  # noqa: E501
 

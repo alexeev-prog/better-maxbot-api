@@ -8,19 +8,22 @@ import os
 import re
 import sys
 import time
-from datetime import datetime, date
+from datetime import date, datetime
 from html.entities import name2codepoint
 from html.parser import HTMLParser
 from logging.handlers import RotatingFileHandler
-from croniter import croniter
-from typing import TypeVar, Callable
+from typing import Callable, TypeVar
 
-RT = TypeVar('RT')
+from croniter import croniter
+
+RT = TypeVar("RT")
 
 
 # noinspection PyUnusedLocal
 def log_dec(
-        func: Callable[..., RT], *args: object, **kwargs: object  # pylint: disable=W0613
+    func: Callable[..., RT],
+    *args: object,
+    **kwargs: object,  # pylint: disable=W0613
 ) -> Callable[..., RT]:
     # logger = logging.getLogger(func.__module__)
     logger = BotLogger.get_instance()
@@ -28,10 +31,10 @@ def log_dec(
     # noinspection PyShadowingNames
     @functools.wraps(func)
     def decorator(*args: object, **kwargs: object) -> RT:  # pylint: disable=W0613
-        logger.debug('Entering: %s', func.__name__)
+        logger.debug("Entering: %s", func.__name__)
         result = func(*args, **kwargs)
         logger.debug(result)
-        logger.debug('Exiting: %s', func.__name__)
+        logger.debug("Exiting: %s", func.__name__)
         return result
 
     return decorator
@@ -44,24 +47,24 @@ class _HTMLToText(HTMLParser):
         self.hide_output = False
 
     def handle_starttag(self, tag, attrs):
-        if tag in ('p', 'br') and not self.hide_output:
-            self._buf.append('\n')
-        elif tag in ('script', 'style'):
+        if tag in ("p", "br") and not self.hide_output:
+            self._buf.append("\n")
+        elif tag in ("script", "style"):
             self.hide_output = True
 
     def handle_startendtag(self, tag, attrs):
-        if tag == 'br':
-            self._buf.append('\n')
+        if tag == "br":
+            self._buf.append("\n")
 
     def handle_endtag(self, tag):
-        if tag == 'p':
-            self._buf.append('\n')
-        elif tag in ('script', 'style'):
+        if tag == "p":
+            self._buf.append("\n")
+        elif tag in ("script", "style"):
             self.hide_output = False
 
     def handle_data(self, text):
         if text and not self.hide_output:
-            self._buf.append(re.sub(r'\s+', ' ', text))
+            self._buf.append(re.sub(r"\s+", " ", text))
 
     # noinspection SpellCheckingInspection
     def handle_entityref(self, name):
@@ -72,11 +75,11 @@ class _HTMLToText(HTMLParser):
     # noinspection SpellCheckingInspection
     def handle_charref(self, name):
         if not self.hide_output:
-            n = int(name[1:], 16) if name.startswith('x') else int(name)
+            n = int(name[1:], 16) if name.startswith("x") else int(name)
             self._buf.append(chr(n))
 
     def get_text(self):
-        return re.sub(r' +', ' ', ''.join(self._buf))
+        return re.sub(r" +", " ", "".join(self._buf))
 
 
 class Utils:
@@ -128,7 +131,9 @@ class Utils:
     def str_to_float(string, default=None):
         value = default
         try:
-            value = float(string.strip().replace(',', '.').replace(' ', '').replace(' ', ''))
+            value = float(
+                string.strip().replace(",", ".").replace(" ", "").replace(" ", "")
+            )
         except TypeError:
             pass
         except ValueError:
@@ -154,27 +159,27 @@ class Utils:
         s = os.environ.get(np)
         if s:
             s = s.lower()
-            if s == 'true':
+            if s == "true":
                 res = True
-            elif s == 'false':
+            elif s == "false":
                 res = False
         return res
 
     @staticmethod
-    def str_add(primary_string, added_string, delimiter='; '):
+    def str_add(primary_string, added_string, delimiter="; "):
         if not isinstance(primary_string, str):
             primary_string = str(primary_string)
         if not isinstance(added_string, str):
             added_string = str(added_string)
         res = primary_string
         if added_string and len(added_string) != 0:
-            res += ('' if not res else delimiter) + added_string
+            res += ("" if not res else delimiter) + added_string
         return res
 
     @staticmethod
     def get_md5_hash_str(str_):
         # type: (str) -> str
-        return hashlib.md5(str(str_).encode('utf-8')).hexdigest()
+        return hashlib.md5(str(str_).encode("utf-8")).hexdigest()
 
     @staticmethod
     def put_into_text_storage(text_storage, text, max_length):
@@ -182,7 +187,7 @@ class Utils:
 
         max_length = int(max_length)
         if len(text_storage) == 0:
-            text_storage.append('')
+            text_storage.append("")
         ci = len(text_storage) - 1
         if len(text_storage[ci] + text) <= max_length:
             text = text_storage[ci] + text
@@ -191,7 +196,7 @@ class Utils:
             s_m = []
             p_c = math.ceil(len(text) / max_length)
             for i in range(p_c):
-                s_m.append(text[max_length * i:max_length * (i + 1)])
+                s_m.append(text[max_length * i : max_length * (i + 1)])
             if not text_storage[ci]:
                 text_storage.pop(ci)
             text_storage.extend(s_m)
@@ -234,12 +239,12 @@ class Utils:
     @staticmethod
     def get_environ_languages_dict(np, default=None) -> dict:
         res = {}
-        default = default or {'ru': 'Русский', 'en': 'English'}
+        default = default or {"ru": "Русский", "en": "English"}
         l_fe = os.environ.get(np)
         if l_fe:
-            l_l = l_fe.split(':')
+            l_l = l_fe.split(":")
             for l_c in l_l:
-                l_r = l_c.split('=')
+                l_r = l_c.split("=")
                 if len(l_r) == 2:
                     res[l_r[0]] = l_r[1]
         if not res:
@@ -254,10 +259,12 @@ class Utils:
 
     @staticmethod
     def dt_str_normalize(date_str: str):
-        return (date_str or '').replace(',', '.').replace('/', '.')
+        return (date_str or "").replace(",", ".").replace("/", ".")
 
     @classmethod
-    def get_datetime_by_str(cls, date_str: str, fmt_date_usr="%d.%m.%Y", fmt_date_usr_short="%d.%m.%y") -> datetime:
+    def get_datetime_by_str(
+        cls, date_str: str, fmt_date_usr="%d.%m.%Y", fmt_date_usr_short="%d.%m.%y"
+    ) -> datetime:
         date_str = cls.dt_str_normalize(date_str)
         try:
             return datetime.strptime(date_str, fmt_date_usr).astimezone()
@@ -268,8 +275,12 @@ class Utils:
                 pass
 
     @classmethod
-    def get_date_by_str(cls, date_str: str, fmt_date_usr="%d.%m.%Y", fmt_date_usr_short="%d.%m.%y") -> date:
-        dt = cls.get_datetime_by_str(date_str, fmt_date_usr=fmt_date_usr, fmt_date_usr_short=fmt_date_usr_short)
+    def get_date_by_str(
+        cls, date_str: str, fmt_date_usr="%d.%m.%Y", fmt_date_usr_short="%d.%m.%y"
+    ) -> date:
+        dt = cls.get_datetime_by_str(
+            date_str, fmt_date_usr=fmt_date_usr, fmt_date_usr_short=fmt_date_usr_short
+        )
         if dt:
             return dt.date()
 
@@ -294,19 +305,24 @@ class Utils:
         if func is None:
             return
         lgz = BotLogger.get_instance()
-        lgz.debug(f'scheduler {func.__name__} cron string - {cron_str}, args={args}, kwargs={kwargs}')
+        lgz.debug(
+            f"scheduler {func.__name__} cron string - {cron_str}, args={args}, kwargs={kwargs}"
+        )
         itr = croniter(cron_str, datetime.now().astimezone())
         itr.get_next(datetime)
         lgz.debug(
-            f'scheduler {func.__name__} next run - {itr.get_current(datetime)} ({cron_str}), args={args}, kwargs={kwargs}')
+            f"scheduler {func.__name__} next run - {itr.get_current(datetime)} ({cron_str}), args={args}, kwargs={kwargs}"
+        )
         while not Utils.STOP_ALL_RUNNING_SCHEDULERS:
             try:
                 if datetime.now().astimezone() >= itr.get_current(datetime):
                     dtn = itr.get_next(datetime)
                     func(*args, **kwargs)
-                    lgz.debug(f'scheduler {func.__name__} next run - {dtn} ({cron_str}), args={args}, kwargs={kwargs}')
+                    lgz.debug(
+                        f"scheduler {func.__name__} next run - {dtn} ({cron_str}), args={args}, kwargs={kwargs}"
+                    )
             except Exception as e:
-                lgz.exception(f'Exception:{e}')
+                lgz.exception(f"Exception:{e}")
             finally:
                 time.sleep(sl_time)
 
@@ -317,7 +333,7 @@ class ExtList(list):
         super(ExtList, self).__init__()
 
     def append(self, obj):
-        if not self.no_double or not (obj in self):
+        if not self.no_double or obj not in self:
             super(ExtList, self).append(obj)
 
     def extend(self, list_add):
@@ -342,16 +358,26 @@ class BotLogger(logging.Logger):
     def __new__(cls, **kwargs):
         instance = None
         if not cls.__instance:
-            instance_name = os.environ.get('MAX_BOT_LOGGING_NAME') or 'MaxBot'
+            instance_name = os.environ.get("MAX_BOT_LOGGING_NAME") or "MaxBot"
             instance = logging.getLogger(instance_name)
             # noinspection SpellCheckingInspection
             formatter = logging.Formatter(
-                '%(asctime)s - %(name)s[%(threadName)s-%(thread)d] - %(levelname)s - %(module)s.%(funcName)s:%(lineno)d - %(message)s')
+                "%(asctime)s - %(name)s[%(threadName)s-%(thread)d] - %(levelname)s - %(module)s.%(funcName)s:%(lineno)d - %(message)s"
+            )
 
-            log_file_max_bytes = Utils.get_environ_int('MAX_BOT_LOGGING_FILE_MAX_BYTES') or 10485760
-            log_file_backup_count = Utils.get_environ_int('MAX_BOT_LOGGING_FILE_BACKUP_COUNT') or 10
-            fh = RotatingFileHandler(f"bots_{instance_name}.log", mode='a', maxBytes=log_file_max_bytes,
-                                     backupCount=log_file_backup_count, encoding='UTF-8')
+            log_file_max_bytes = (
+                Utils.get_environ_int("MAX_BOT_LOGGING_FILE_MAX_BYTES") or 10485760
+            )
+            log_file_backup_count = (
+                Utils.get_environ_int("MAX_BOT_LOGGING_FILE_BACKUP_COUNT") or 10
+            )
+            fh = RotatingFileHandler(
+                f"bots_{instance_name}.log",
+                mode="a",
+                maxBytes=log_file_max_bytes,
+                backupCount=log_file_backup_count,
+                encoding="UTF-8",
+            )
             fh.setFormatter(formatter)
             instance.addHandler(fh)
 
@@ -359,8 +385,10 @@ class BotLogger(logging.Logger):
             sh.setFormatter(formatter)
             instance.addHandler(sh)
 
-            cls.trace_requests = Utils.get_environ_bool('MAX_BOT_TRACE_REQUESTS') or False
-            cls.logging_level = os.environ.get('MAX_BOT_LOGGING_LEVEL') or 'INFO'
+            cls.trace_requests = (
+                Utils.get_environ_bool("MAX_BOT_TRACE_REQUESTS") or False
+            )
+            cls.logging_level = os.environ.get("MAX_BOT_LOGGING_LEVEL") or "INFO"
             cls.logging_level = logging._nameToLevel.get(cls.logging_level)
             if cls.logging_level is None:
                 instance.setLevel(logging.DEBUG if cls.trace_requests else logging.INFO)
@@ -394,7 +422,9 @@ class Scheduler:
     def run(self, func: callable, cron_str: str, *args, **kwargs):
         if func is None:
             return
-        self.lgz.debug(f'scheduler {func.__name__} cron string - {cron_str}, args={args}, kwargs={kwargs}')
+        self.lgz.debug(
+            f"scheduler {func.__name__} cron string - {cron_str}, args={args}, kwargs={kwargs}"
+        )
         itr = croniter(cron_str, datetime.now().astimezone())
         itr_p = croniter(cron_str, datetime.now().astimezone())
         itr_p.get_prev(datetime)
@@ -405,18 +435,21 @@ class Scheduler:
         pr_prev = 100 * ((dt_cur - dt_prev) / (dt_next - dt_prev))
         if pr_prev <= self.fr_level:
             self.lgz.debug(
-                f'scheduler {func.__name__} {pr_prev:.4f}% from previous running: next run modify to {itr.get_current(datetime)}. First run level: {self.fr_level:.4f} %')
+                f"scheduler {func.__name__} {pr_prev:.4f}% from previous running: next run modify to {itr.get_current(datetime)}. First run level: {self.fr_level:.4f} %"
+            )
             itr.get_prev(datetime)
         self.lgz.debug(
-            f'scheduler {func.__name__} next run - {itr.get_current(datetime)} ({cron_str}), args={args}, kwargs={kwargs} [{pr_prev:.4f} %]')
+            f"scheduler {func.__name__} next run - {itr.get_current(datetime)} ({cron_str}), args={args}, kwargs={kwargs} [{pr_prev:.4f} %]"
+        )
         while self._running:
             try:
                 if datetime.now().astimezone() >= itr.get_current(datetime):
                     dtn = itr.get_next(datetime)
                     func(*args, **kwargs)
                     self.lgz.debug(
-                        f'scheduler {func.__name__} next run - {dtn} ({cron_str}), args={args}, kwargs={kwargs}')
+                        f"scheduler {func.__name__} next run - {dtn} ({cron_str}), args={args}, kwargs={kwargs}"
+                    )
             except Exception as e:
-                self.lgz.exception(f'Exception:{e}')
+                self.lgz.exception(f"Exception:{e}")
             finally:
                 time.sleep(self.sl_time)

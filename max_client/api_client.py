@@ -1,13 +1,11 @@
-# coding: utf-8
-"""
-Max Bot API
+r"""
+Max Bot API.
 
 # About Bot API allows bots to interact with Max. Methods are called by sending HTTPS requests to [botapi.max.ru](https://botapi.max.ru) domain. Bots are third-party applications that use Max features. A bot can legitimately take part in a conversation. It can be achieved through HTTP requests to the Max Bot API.  ## Features Max bots of the current version are able to: - Communicate with users and respond to requests - Recommend users complete actions via programmed buttons - Request personal data from users (name, short reference, phone number) We'll keep working on expanding bot capabilities in the future.  ## Examples Bots can be used for the following purposes: - Providing support, answering frequently asked questions - Sending typical information - Voting - Likes/dislikes - Following external links - Forwarding a user to a chat/channel  ## @MasterBot [MasterBot](https://max.ru/MasterBot) is the main bot in Max, all bots creator. Use MasterBot to create and edit your bots. Feel free to contact us for any questions, [@support](https://max.ru/support) or [help@max.ru](mailto:help@max.ru).  ## HTTP verbs `GET` &mdash; getting resources, parameters are transmitted via URL  `POST` &mdash; creation of resources (for example, sending new messages)  `PUT` &mdash; editing resources  `DELETE` &mdash; deleting resources  `PATCH` &mdash; patching resources  ## HTTP response codes `200` &mdash; successful operation  `400` &mdash; invalid request  `401` &mdash; authentication error  `404` &mdash; resource not found  `405` &mdash; method is not allowed  `429` &mdash; the number of requests is exceeded  `503` &mdash; service unavailable  ## Resources format For content requests (PUT and POST) and responses, the API uses the JSON format. All strings are UTF-8 encoded. Date/time fields are represented as the number of milliseconds that have elapsed since 00:00 January 1, 1970 in the long format. To get it, you can simply multiply the UNIX timestamp by 1000. All date/time fields have a UTC timezone. ## Error responses In case of an error, the API returns a response with the corresponding HTTP code and JSON with the following fields:  `code` - the string with the error key  `message` - a string describing the error </br>  For example: ```bash > http https://botapi.max.ru/chats?access_token={EXAMPLE_TOKEN} HTTP / 1.1 403 Forbidden Cache-Control: no-cache Connection: Keep-Alive Content-Length: 57 Content-Type: application / json; charset = utf-8 Set-Cookie: web_ui_lang = ru; Path = /; Domain = .max.ru; Expires = 2019-03-24T11: 45: 36.500Z {    \"code\": \"verify.token\",    \"message\": \"Invalid access_token\" } ``` ## Receiving notifications Max Bot API supports 2 options of receiving notifications on new events for bots: - Push notifications via WebHook. To receive data via WebHook, you'll have to [add subscription](https://dev.max.ru/#operation/subscribe); - Notifications upon request via [long polling](#operation/getUpdates) API. All data can be received via long polling **by default** after creating the bot.  Both methods **cannot** be used simultaneously. Refer to the response schema of [/updates](https://dev.max.ru/#operation/getUpdates) method to check all available types of updates.  ### Webhook There is some notes about how we handle webhook subscription: 1. Sometimes webhook notification cannot be delivered in case when bot server or network is down.    In such case we well retry delivery in a short period of time (from 30 to 60 seconds) and will do this until get   `200 OK` status code from your server, but not longer than **8 hours** (*may change over time*) since update happened.    We also consider any non `200`-response from server as failed delivery.  2. To protect your bot from unexpected high load we send **no more than 100** notifications per second by default.   If you want increase this limit, contact us at [@support](https://max.ru/support).   It should be from one of the following subnets: ``` 5.101.42.200/31 31.177.104.200/31 89.221.230.200/31 ```   ## Message buttons You can program buttons for users answering a bot. Max supports the following types of buttons:  `callback` &mdash; sends a notification with payload to a bot (via WebHook or long polling)  `link` &mdash; makes a user to follow a link  `request_contact` &mdash; requests the user permission to access contact information (phone number, short link, email)  `request_geo_location` &mdash; asks user to provide current geo location  `chat` &mdash; creates chat associated with message  To start create buttons [send message](#operation/sendMessage) with `InlineKeyboardAttachment`: ```json {   \"text\": \"It is message with inline keyboard\",   \"attachments\": [     {       \"type\": \"inline_keyboard\",       \"payload\": {         \"buttons\": [           [             {               \"type\": \"callback\",               \"text\": \"Press me!\",               \"payload\": \"button1 pressed\"             }           ],           [             {               \"type\": \"chat\",               \"text\": \"Discuss\",               \"chat_title\": \"Message discussion\"             }           ]         ]       }     }   ] } ``` ### Chat button Chat button is a button that starts chat assosiated with the current message. It will be **private** chat with a link, bot will be added as administrator by default.  Chat will be created as soon as the first user taps on button. Bot will receive `message_chat_created` update.  Bot can set title and description of new chat by setting `chat_title` and `chat_description` properties.  Whereas keyboard can contain several `chat`-buttons there is `uuid` property to distinct them between each other. In case you do not pass `uuid` we will generate it. If you edit message, pass `uuid` so we know that this button starts the same chat as before.  Chat button also can contain `start_payload` that will be sent to bot as part of `message_chat_created` update.  ## Deep linking Max supports deep linking mechanism for bots. It allows passing additional payload to the bot on startup. Deep link can contain any data encoded into string up to **128** characters long. Longer strings will be omitted and **not** passed to the bot.  Each bot has start link that looks like: ``` https://max.ru/%BOT_USERNAME%/start/%PAYLOAD% ``` As soon as user clicks on such link we open dialog with bot and send this payload to bot as part of `bot_started` update: ```json {     \"update_type\": \"bot_started\",     \"timestamp\": 1573226679188,     \"chat_id\": 1234567890,     \"user\": {         \"user_id\": 1234567890,         \"name\": \"Boris\",         \"username\": \"borisd84\"     },     \"payload\": \"any data meaningful to bot\" } ```  Deep linking mechanism is supported for iOS version 2.7.0 and Android 2.9.0 and higher.  ## Text formatting  Message text can be improved with basic formatting such as: **strong**, *emphasis*, ~strikethough~,  <ins>underline</ins>, `code` or link. You can use either markdown-like or HTML formatting.  To enable text formatting set the `format` property of [NewMessageBody](#tag/new_message_model).  ### Max flavored Markdown To enable [Markdown](https://spec.commonmark.org/0.29/) parsing, set the `format` property of [NewMessageBody](#tag/new_message_model) to `markdown`.  We currently support only the following syntax:  `*empasized*` or `_empasized_` for *italic* text  `**strong**` or `__strong__` for __bold__ text  `~~strikethough~~`  for ~strikethough~ text  `++underline++`  for <ins>underlined</ins> text  ``` `code` ``` or ` ```code``` ` for `monospaced` text  `^^important^^` for highlighted text (colored in red, by default)  `[Inline URL](https://dev.max.ru/)` for inline URLs  `[User mention](max://user/%user_id%)` for user mentions without username  `# Header` for header  ### HTML support  To enable HTML parsing, set the `format` property of [NewMessageBody](#tag/new_message_model) to `html`.  Only the following HTML tags are supported. All others will be stripped:  Emphasized: `<i>` or `<em>`  Strong: `<b>` or `<strong>`  Strikethrough: `<del>` or `<s>`  Underlined: `<ins>` or `<u>`  Link: `<a href=\"https://dev.max.ru\">Docs</a>`  Monospaced text: `<pre>` or `<code>`  Highlighted text: `<mark>`  Header: `<h1>`  Text formatting is supported for iOS since version 3.1 and Android since 2.20.0.  # Versioning API models and interface may change over time. To make sure your bot will get the right info, we strongly recommend adding API version number to each request. You can add it as `v` parameter to each HTTP-request. For instance, `v=0.1.2`. To specify the data model version you are getting through WebHook subscription, use the `version` property in the request body of the [subscribe](https://dev.max.ru/#operation/subscribe) request.  # Libraries We have developed the official [Java client](https://github.com/max-messenger/max-bot-api-client-java) and [SDK](https://github.com/max-messenger/max-bot-sdk-java).  # Changelog To see changelog for older versions visit our [GitHub](https://github.com/max-messenger/max-bot-api-schema/releases).  # noqa: E501
 
 OpenAPI spec version: 0.0.10
 """
 
-from __future__ import absolute_import
 
 import datetime
 import json
@@ -28,8 +26,9 @@ from max_client import rest
 from max_client.configuration import Configuration
 
 
-class ApiClient(object):
-    """Generic API client for OpenAPI client library builds.
+class ApiClient:
+    """
+    Generic API client for OpenAPI client library builds.
 
     OpenAPI generic API client. This client handles the client-
     server communication, and is invariant across implementations. Specifics of
@@ -50,7 +49,7 @@ class ApiClient(object):
         to the API. More threads means more concurrent API requests.
     """
 
-    PRIMITIVE_TYPES = (float, bool, bytes, six.text_type) + six.integer_types
+    PRIMITIVE_TYPES = (float, bool, bytes, six.text_type, *six.integer_types)
     # noinspection PyUnresolvedReferences
     NATIVE_TYPES_MAPPING = {
         "int": int,
@@ -93,7 +92,8 @@ class ApiClient(object):
 
     @property
     def pool(self):
-        """Create thread pool on first request
+        """
+        Create thread pool on first request
         avoids instantiating unused threadpool for blocking clients.
         """
         if self._pool is None:
@@ -102,7 +102,7 @@ class ApiClient(object):
 
     @property
     def user_agent(self):
-        """User agent for this API client"""
+        """User agent for this API client."""
         return self.default_headers["User-Agent"]
 
     @user_agent.setter
@@ -149,7 +149,7 @@ class ApiClient(object):
             for k, v in path_params:
                 # specified safe chars, encode everything
                 resource_path = resource_path.replace(
-                    "{%s}" % k, quote(str(v), safe=config.safe_chars_for_path_param)
+                    f"{{{k}}}", quote(str(v), safe=config.safe_chars_for_path_param)
                 )
 
         # query parameters
@@ -200,11 +200,11 @@ class ApiClient(object):
 
         if _return_http_data_only:
             return return_data
-        else:
-            return (return_data, response_data.status, response_data.getheaders())
+        return (return_data, response_data.status, response_data.getheaders())
 
     def sanitize_for_serialization(self, obj):
-        """Builds a JSON POST object.
+        """
+        Builds a JSON POST object.
 
         If obj is None, return None.
         If obj is str, int, long, float, bool, return directly.
@@ -219,13 +219,13 @@ class ApiClient(object):
         """
         if obj is None:
             return None
-        elif isinstance(obj, self.PRIMITIVE_TYPES):
+        if isinstance(obj, self.PRIMITIVE_TYPES):
             return obj
-        elif isinstance(obj, list):
+        if isinstance(obj, list):
             return [self.sanitize_for_serialization(sub_obj) for sub_obj in obj]
-        elif isinstance(obj, tuple):
+        if isinstance(obj, tuple):
             return tuple(self.sanitize_for_serialization(sub_obj) for sub_obj in obj)
-        elif isinstance(obj, (datetime.datetime, datetime.date)):
+        if isinstance(obj, datetime.datetime | datetime.date):
             return obj.isoformat()
 
         if isinstance(obj, dict):
@@ -248,7 +248,8 @@ class ApiClient(object):
         }
 
     def deserialize(self, response, response_type):
-        """Deserializes response into an object.
+        """
+        Deserializes response into an object.
 
         :param response: RESTResponse object to be deserialized.
         :param response_type: class literal for
@@ -270,7 +271,8 @@ class ApiClient(object):
         return self.__deserialize(data, response_type)
 
     def __deserialize(self, data, klass):
-        """Deserializes dict, list, str into an object.
+        """
+        Deserializes dict, list, str into an object.
 
         :param data: dict, list or str.
         :param klass: class literal, or string of class name.
@@ -301,14 +303,13 @@ class ApiClient(object):
 
             if klass in self.PRIMITIVE_TYPES:
                 return self.__deserialize_primitive(data, klass)
-            elif klass == object:
+            if klass == object:
                 return self.__deserialize_object(data)
-            elif klass == datetime.date:
+            if klass == datetime.date:
                 return self.__deserialize_date(data)
-            elif klass == datetime.datetime:
+            if klass == datetime.datetime:
                 return self.__deserialize_datatime(data)
-            else:
-                return self.__deserialize_model(data, klass)
+            return self.__deserialize_model(data, klass)
         except ValueError as e:
             raise ValueError(data, e)
 
@@ -330,7 +331,8 @@ class ApiClient(object):
         _preload_content=True,
         _request_timeout=None,
     ):
-        """Makes the HTTP request (synchronous) and returns deserialized data.
+        """
+        Makes the HTTP request (synchronous) and returns deserialized data.
 
         To make an async_req request, set the async_req parameter.
 
@@ -383,27 +385,25 @@ class ApiClient(object):
                 _preload_content,
                 _request_timeout,
             )
-        else:
-            thread = self.pool.apply_async(
-                self.__call_api,
-                (
-                    resource_path,
-                    method,
-                    path_params,
-                    query_params,
-                    header_params,
-                    body,
-                    post_params,
-                    files,
-                    response_type,
-                    auth_settings,
-                    _return_http_data_only,
-                    collection_formats,
-                    _preload_content,
-                    _request_timeout,
-                ),
-            )
-        return thread
+        return self.pool.apply_async(
+            self.__call_api,
+            (
+                resource_path,
+                method,
+                path_params,
+                query_params,
+                header_params,
+                body,
+                post_params,
+                files,
+                response_type,
+                auth_settings,
+                _return_http_data_only,
+                collection_formats,
+                _preload_content,
+                _request_timeout,
+            ),
+        )
 
     def request(
         self,
@@ -425,7 +425,7 @@ class ApiClient(object):
                 _request_timeout=_request_timeout,
                 headers=headers,
             )
-        elif method == "HEAD":
+        if method == "HEAD":
             return self.rest_client.HEAD(
                 url,
                 query_params=query_params,
@@ -433,7 +433,7 @@ class ApiClient(object):
                 _request_timeout=_request_timeout,
                 headers=headers,
             )
-        elif method == "OPTIONS":
+        if method == "OPTIONS":
             return self.rest_client.OPTIONS(
                 url,
                 query_params=query_params,
@@ -443,7 +443,7 @@ class ApiClient(object):
                 _request_timeout=_request_timeout,
                 body=body,
             )
-        elif method == "POST":
+        if method == "POST":
             return self.rest_client.POST(
                 url,
                 query_params=query_params,
@@ -453,7 +453,7 @@ class ApiClient(object):
                 _request_timeout=_request_timeout,
                 body=body,
             )
-        elif method == "PUT":
+        if method == "PUT":
             return self.rest_client.PUT(
                 url,
                 query_params=query_params,
@@ -463,7 +463,7 @@ class ApiClient(object):
                 _request_timeout=_request_timeout,
                 body=body,
             )
-        elif method == "PATCH":
+        if method == "PATCH":
             return self.rest_client.PATCH(
                 url,
                 query_params=query_params,
@@ -473,7 +473,7 @@ class ApiClient(object):
                 _request_timeout=_request_timeout,
                 body=body,
             )
-        elif method == "DELETE":
+        if method == "DELETE":
             return self.rest_client.DELETE(
                 url,
                 query_params=query_params,
@@ -482,14 +482,14 @@ class ApiClient(object):
                 _request_timeout=_request_timeout,
                 body=body,
             )
-        else:
-            raise ValueError(
-                "http method must be `GET`, `HEAD`, `OPTIONS`,"
-                " `POST`, `PATCH`, `PUT` or `DELETE`."
-            )
+        raise ValueError(
+            "http method must be `GET`, `HEAD`, `OPTIONS`,"
+            " `POST`, `PATCH`, `PUT` or `DELETE`."
+        )
 
     def parameters_to_tuples(self, params, collection_formats):
-        """Get parameters as list of tuples, formatting collections.
+        """
+        Get parameters as list of tuples, formatting collections.
 
         :param params: Parameters as dict or list of two-tuples
         :param dict collection_formats: Parameter collection formats
@@ -498,7 +498,7 @@ class ApiClient(object):
         new_params = []
         if collection_formats is None:
             collection_formats = {}
-        for k, v in six.iteritems(params) if isinstance(params, dict) else params:  # noqa: E501
+        for k, v in six.iteritems(params) if isinstance(params, dict) else params:
             if k in collection_formats:
                 collection_format = collection_formats[k]
                 if collection_format == "multi":
@@ -518,7 +518,8 @@ class ApiClient(object):
         return new_params
 
     def prepare_post_parameters(self, post_params=None, files=None):
-        """Builds form parameters.
+        """
+        Builds form parameters.
 
         :param post_params: Normal form parameters.
         :param files: File parameters.
@@ -542,28 +543,29 @@ class ApiClient(object):
                             mimetypes.guess_type(filename)[0]
                             or "application/octet-stream"
                         )
-                        params.append(tuple([k, tuple([filename, filedata, mimetype])]))
+                        params.append((k, (filename, filedata, mimetype)))
 
         return params
 
     def select_header_accept(self, accepts):
-        """Returns `Accept` based on an array of accepts provided.
+        """
+        Returns `Accept` based on an array of accepts provided.
 
         :param accepts: List of headers.
         :return: Accept (e.g. application/json).
         """
         if not accepts:
-            return
+            return None
 
         accepts = [x.lower() for x in accepts]
 
         if "application/json" in accepts:
             return "application/json"
-        else:
-            return ", ".join(accepts)
+        return ", ".join(accepts)
 
     def select_header_content_type(self, content_types):
-        """Returns `Content-Type` based on an array of content_types provided.
+        """
+        Returns `Content-Type` based on an array of content_types provided.
 
         :param content_types: List of content-types.
         :return: Content-Type (e.g. application/json).
@@ -575,11 +577,11 @@ class ApiClient(object):
 
         if "application/json" in content_types or "*/*" in content_types:
             return "application/json"
-        else:
-            return content_types[0]
+        return content_types[0]
 
     def update_params_for_auth(self, headers, querys, auth_settings):
-        """Updates header and query params based on authentication setting.
+        """
+        Updates header and query params based on authentication setting.
 
         :param headers: Header parameters dict to be updated.
         :param querys: Query parameters tuple list to be updated.
@@ -593,7 +595,7 @@ class ApiClient(object):
             if auth_setting:
                 if not auth_setting["value"]:
                     continue
-                elif auth_setting["in"] == "header":
+                if auth_setting["in"] == "header":
                     headers[auth_setting["key"]] = auth_setting["value"]
                 elif auth_setting["in"] == "query":
                     querys.append((auth_setting["key"], auth_setting["value"]))
@@ -603,7 +605,8 @@ class ApiClient(object):
                     )
 
     def __deserialize_file(self, response):
-        """Deserializes body to file
+        """
+        Deserializes body to file.
 
         Saves response body into a file in a temporary folder,
         using the filename from the `Content-Disposition` header if provided.
@@ -628,7 +631,8 @@ class ApiClient(object):
         return path
 
     def __deserialize_primitive(self, data, klass):
-        """Deserializes string to primitive type.
+        """
+        Deserializes string to primitive type.
 
         :param data: str.
         :param klass: class literal.
@@ -643,14 +647,16 @@ class ApiClient(object):
             return data
 
     def __deserialize_object(self, value):
-        """Return an original value.
+        """
+        Return an original value.
 
         :return: object.
         """
         return value
 
     def __deserialize_date(self, string):
-        """Deserializes string to date.
+        """
+        Deserializes string to date.
 
         :param string: str.
         :return: date.
@@ -663,11 +669,12 @@ class ApiClient(object):
             return string
         except ValueError:
             raise rest.ApiException(
-                status=0, reason="Failed to parse `{0}` as date object".format(string)
+                status=0, reason=f"Failed to parse `{string}` as date object"
             )
 
     def __deserialize_datatime(self, string):
-        """Deserializes string to datetime.
+        """
+        Deserializes string to datetime.
 
         The string should be in iso8601 datetime format.
 
@@ -683,17 +690,17 @@ class ApiClient(object):
         except ValueError:
             raise rest.ApiException(
                 status=0,
-                reason=("Failed to parse `{0}` as datetime object".format(string)),
+                reason=(f"Failed to parse `{string}` as datetime object"),
             )
 
     def __deserialize_model(self, data, klass):
-        """Deserializes list or dict to model.
+        """
+        Deserializes list or dict to model.
 
         :param data: dict, list.
         :param klass: class literal.
         :return: model object.
         """
-
         if not klass.openapi_types and not hasattr(klass, "get_real_child_model"):
             return data
 
@@ -703,7 +710,7 @@ class ApiClient(object):
                 if (
                     data is not None
                     and klass.attribute_map[attr] in data
-                    and isinstance(data, (list, dict))
+                    and isinstance(data, list | dict)
                 ):
                     value = data[klass.attribute_map[attr]]
                     kwargs[attr] = self.__deserialize(value, attr_type)

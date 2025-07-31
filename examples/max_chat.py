@@ -3,7 +3,7 @@ import re
 from max_client import Chat, ChatType
 
 
-class ChatExt(object):
+class ChatExt:
     TT_URL_BASE = "https://max.me/"
 
     def __init__(self, chat, this_dialog_name, admin_permissions=None):
@@ -25,18 +25,15 @@ class ChatExt(object):
     def title(self):
         link_s = ""
         if self.chat_user_name:
-            link_s = " (@%s)" % self.chat_user_name
-        return "%s%s" % (self.chat.title if self.chat.title else "", link_s)
+            link_s = f" (@{self.chat_user_name})"
+        return "{}{}".format(self.chat.title if self.chat.title else "", link_s)
 
     @property
     def title_ext(self):
-        if self.chat.link:
-            link_s = " (%s)" % self.chat.link
-        else:
-            link_s = ""
+        link_s = f" ({self.chat.link})" if self.chat.link else ""
         if self.chat_user_name:
-            link_s = " (@%s)" % self.chat_user_name
-        return "%s%s" % (self.chat.title if self.chat.title else "", link_s)
+            link_s = f" (@{self.chat_user_name})"
+        return "{}{}".format(self.chat.title if self.chat.title else "", link_s)
 
     def get_chat_name(self, title):
         # type: (str) -> str
@@ -44,11 +41,11 @@ class ChatExt(object):
         if not chat_name:
             if self.chat.type == ChatType.DIALOG:
                 chat_name = self.this_dialog_name or _(
-                    "current bot (№%s)" % self.chat.chat_id
+                    f"current bot (№{self.chat.chat_id})"
                 )
             else:
                 chat_name = "unnamed"
-        return "%s <%s>" % (self.chat_type(self.chat.type), chat_name)
+        return f"{self.chat_type(self.chat.type)} <{chat_name}>"
 
     @property
     def chat_name(self):
@@ -65,27 +62,26 @@ class ChatExt(object):
         # type: () -> str
         if self._lang is None:
             self._lang = ""
-            if isinstance(self.chat, Chat):
-                if re.findall(
-                    r"[а-яА-я]{4,}",
-                    "%s\n\n\n%s" % (self.chat.title, self.chat.description),
-                ):
-                    self._lang = "ru"
+            if isinstance(self.chat, Chat) and re.findall(
+                r"[а-яА-я]{4,}",
+                f"{self.chat.title}\n\n\n{self.chat.description}",
+            ):
+                self._lang = "ru"
         return self._lang
 
     @property
     def chat_user_name(self):
         user_name = ""
         if self.chat.link:
-            if not self.chat.link.startswith("%sjoin/" % self.TT_URL_BASE):
-                user_name = self.chat.link.replace("%s" % self.TT_URL_BASE, "")
+            if not self.chat.link.startswith(f"{self.TT_URL_BASE}join/"):
+                user_name = self.chat.link.replace(f"{self.TT_URL_BASE}", "")
         return user_name
 
     @property
     def public_name(self):
         public_name = None
         if self.chat.link:
-            public_name = self.chat.link.replace("%s" % self.TT_URL_BASE, "")
+            public_name = self.chat.link.replace(f"{self.TT_URL_BASE}", "")
         return public_name
 
     @staticmethod
@@ -116,4 +112,4 @@ class ChatExt(object):
         return self.chat_name <= other.chat_name
 
     def __str__(self):
-        return "%s: %s" % (self.chat_name, self.chat)
+        return f"{self.chat_name}: {self.chat}"

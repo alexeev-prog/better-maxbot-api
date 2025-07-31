@@ -27,13 +27,14 @@ class TtUtils:
         content = content or ""
         parameter = parameter or ""
         found = re.match(
-            ".*(%s%s=(.+?)%s).*" % ("\\" + ends[0], parameter, "\\" + ends[1]), content
+            ".*({}{}=(.+?){}).*".format("\\" + ends[0], parameter, "\\" + ends[1]), content
         )
         if found:
             return found.group(2)
+        return None
 
 
-class UpdateCmn(object):
+class UpdateCmn:
     def __init__(self, update, ttb=None):
         # type: (Update, object) -> None
 
@@ -115,13 +116,13 @@ class UpdateCmn(object):
                     else:
                         self.cmd_args["c_parts"].append([])
 
-                    ind_l = "l%s" % i
+                    ind_l = f"l{i}"
                     j = 1
                     for c in re.split(r"_{2}| ", ln):
                         if len(c.strip()) > 0:
                             self.cmd_args["c_parts"][-1].append(c)
 
-                        ind_c = "c%s" % j
+                        ind_c = f"c{j}"
                         if not self.cmd_args.get(ind_l):
                             self.cmd_args[ind_l] = {}
                         self.cmd_args[ind_l][ind_c] = c
@@ -138,13 +139,11 @@ class UpdateCmn(object):
             elif hasattr(update, "sender"):
                 self.user = update.message.sender
 
-        if self.chat_id is None:
-            if hasattr(update, "chat_id"):
-                self.chat_id = update.chat_id
+        if self.chat_id is None and hasattr(update, "chat_id"):
+            self.chat_id = update.chat_id
 
-        if self.user_id is None:
-            if hasattr(update, "user_id"):
-                self.user_id = update.user_id
+        if self.user_id is None and hasattr(update, "user_id"):
+            self.user_id = update.user_id
 
         if hasattr(update, "message") and isinstance(update.message, Message):
             self.message = update.message
@@ -172,7 +171,7 @@ class UpdateCmn(object):
     @property
     def index(self):
         if not self._index:
-            self._index = "%s_%s" % (self.chat_id, self.user_id)
+            self._index = f"{self.chat_id}_{self.user_id}"
         return self._index
 
     def is_double_click(self, callbacks_list):
@@ -187,8 +186,4 @@ class UpdateCmn(object):
     @staticmethod
     def get_callback_index(callback):
         # type: (Callback) -> str
-        ind = "%s#%s" % (
-            callback.user.user_id,
-            Utils.get_md5_hash_str(callback.payload),
-        )
-        return ind
+        return f"{callback.user.user_id}#{Utils.get_md5_hash_str(callback.payload)}"

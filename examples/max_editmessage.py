@@ -76,7 +76,7 @@ class MaxBotException(Exception):
 
 
 # noinspection SqlNoDataSourceInspection,SqlDialectInspection,GrazieInspection
-class MaxBot(object):
+class MaxBot:
     _work_threads_max_count = None
     threads = []
     chats_action = {}
@@ -144,7 +144,7 @@ class MaxBot(object):
 
         self.stop_polling = False
 
-        self.lgz.info("%s inited." % self.title)
+        self.lgz.info(f"{self.title} inited.")
 
     @property
     def token(self):
@@ -168,23 +168,23 @@ class MaxBot(object):
     def set_encoding_for_p2(self, encoding="utf8"):
         if six.PY3:
             return
-        else:
-            # noinspection PyCompatibility,PyUnresolvedReferences
-            reload(sys)
-            # noinspection PyUnresolvedReferences
-            sys.setdefaultencoding(encoding)
-            self.lgz.info(
-                "The default encoding is set to %s" % sys.getdefaultencoding()
-            )
+        # noinspection PyCompatibility,PyUnresolvedReferences
+        reload(sys)
+        # noinspection PyUnresolvedReferences
+        sys.setdefaultencoding(encoding)
+        self.lgz.info(
+            f"The default encoding is set to {sys.getdefaultencoding()}"
+        )
 
     def get_cmd_handler(self, update):
-        if not isinstance(update, (Update, UpdateCmn)):
+        if not isinstance(update, Update | UpdateCmn):
             return False, False
         if not isinstance(update, UpdateCmn):
             update = UpdateCmn(update, self)
-        cmd_handler = "cmd_handler_%s" % update.cmd
+        cmd_handler = f"cmd_handler_{update.cmd}"
         if hasattr(self, cmd_handler):
             return getattr(self, cmd_handler)
+        return None
 
     def before_polling_update_list(self):
         pass
@@ -205,11 +205,11 @@ class MaxBot(object):
                     ul = self.subscriptions.get_updates(
                         types=Update.update_types, _request_timeout=45
                     )
-                self.lgz.debug("Update request completed. Marker=%s" % marker)
+                self.lgz.debug(f"Update request completed. Marker={marker}")
                 marker = ul.marker
                 if ul.updates:
                     self.after_polling_update_list(True)
-                    self.lgz.info("There are %s updates" % len(ul.updates))
+                    self.lgz.info(f"There are {len(ul.updates)} updates")
                     self.lgz.debug(ul)
                     for update in ul.updates:
                         self.lgz.debug(type(update))
@@ -220,13 +220,13 @@ class MaxBot(object):
                         t.name = "pooling-thr-%04d" % len(MaxBot.threads)
                         t.setDaemon(True)
                         self.lgz.debug(
-                            "Thread started. Threads count=%s" % len(MaxBot.threads)
+                            f"Thread started. Threads count={len(MaxBot.threads)}"
                         )
                         t.start()
                 else:
                     self.after_polling_update_list()
                     self.lgz.debug("No updates...")
-                self.lgz.debug("Pause for %s seconds" % self.polling_sleep_time)
+                self.lgz.debug(f"Pause for {self.polling_sleep_time} seconds")
                 sleep(self.polling_sleep_time)
 
             except ApiException as err:
@@ -235,8 +235,7 @@ class MaxBot(object):
             except Exception:
                 self.lgz.exception("Exception")
                 self.lgz.warning(
-                    "Pause for %s seconds because there was an error"
-                    % self.polling_error_sleep_time
+                    f"Pause for {self.polling_error_sleep_time} seconds because there was an error"
                 )
                 sleep(self.polling_error_sleep_time)
                 # raise
@@ -258,7 +257,7 @@ class MaxBot(object):
                 MaxBot.threads.append(t)
                 t.name = "webhook-thr-%04d" % len(MaxBot.threads)
                 t.setDaemon(True)
-                self.lgz.debug("Thread started. Threads count=%s" % len(MaxBot.threads))
+                self.lgz.debug(f"Thread started. Threads count={len(MaxBot.threads)}")
                 t.start()
             except Exception:
                 self.lgz.exception("Exception")
@@ -266,8 +265,7 @@ class MaxBot(object):
                 self.lgz.debug("exited")
         else:
             err = (
-                "Threads pool is full. The maximum number (%s) is used."
-                % MaxBot.work_threads_max_count()
+                f"Threads pool is full. The maximum number ({MaxBot.work_threads_max_count()}) is used."
             )
             self.lgz.debug(err)
             incoming_data = self.deserialize_update(request_body)
@@ -280,6 +278,7 @@ class MaxBot(object):
         # type: (bytes) -> bytes
         if self:
             return request_body
+        return None
 
     # Обработка тела запроса
     def handle_request_body_(self, request_body):
@@ -289,16 +288,14 @@ class MaxBot(object):
         try:
             if request_body:
                 self.lgz.debug(
-                    "request body:\n%s\n%s"
-                    % (request_body, request_body.decode("utf-8"))
+                    "request body:\n{}\n{}".format(request_body, request_body.decode("utf-8"))
                 )
                 request_body = self.before_handle_request_body(request_body)
                 incoming_data = self.deserialize_update(request_body)
                 if incoming_data:
                     incoming_data = self.after_handle_request_body(incoming_data)
                     self.lgz.debug(
-                        "incoming data:\n type=%s;\n data=%s"
-                        % (type(incoming_data), incoming_data)
+                        f"incoming data:\n type={type(incoming_data)};\n data={incoming_data}"
                     )
                     if isinstance(incoming_data, Update):
                         if not self.update_is_service(UpdateCmn(incoming_data, self)):
@@ -310,12 +307,13 @@ class MaxBot(object):
             if isinstance(incoming_data, Update):
                 self.send_error_message(UpdateCmn(incoming_data, self), e)
         finally:
-            self.lgz.debug("Thread exited. Threads count=%s" % len(MaxBot.threads))
+            self.lgz.debug(f"Thread exited. Threads count={len(MaxBot.threads)}")
 
     def after_handle_request_body(self, incoming_data):
         # type: (object) -> object
         if self:
             return incoming_data
+        return None
 
     @classmethod
     def update_is_service(cls, update):
@@ -335,10 +333,9 @@ class MaxBot(object):
 
     def deserialize_open_api_object(self, b_obj, response_type):
         # type: (bytes, str) -> object
-        incoming_data = self.client.deserialize(
+        return self.client.deserialize(
             urllib3.HTTPResponse(b_obj), response_type
         )
-        return incoming_data
 
     def serialize_open_api_object(self, obj):
         # type: (object) -> str
@@ -385,119 +382,106 @@ class MaxBot(object):
         # type: (Update) -> bool
         # noinspection PyBroadException
         try:
-            self.lgz.debug(" -> %s" % type(update))
+            self.lgz.debug(f" -> {type(update)}")
             try:
                 self.before_handle_update(update)
                 if isinstance(update, MessageCreatedUpdate):
                     if not self.update_is_service(UpdateCmn(update, self)):
                         self.lgz.debug(
-                            "entry to %s" % self.handle_message_created_update
+                            f"entry to {self.handle_message_created_update}"
                         )
                         res = self.handle_message_created_update(update)
                         self.lgz.debug(
-                            "exit from %s with result=%s"
-                            % (self.handle_message_created_update, res)
+                            f"exit from {self.handle_message_created_update} with result={res}"
                         )
                     else:
                         res = False
                         self.lgz.debug("This update is service - passed")
                 elif isinstance(update, MessageCallbackUpdate):
-                    self.lgz.debug("entry to %s" % self.handle_message_callback_update)
+                    self.lgz.debug(f"entry to {self.handle_message_callback_update}")
                     res = self.handle_message_callback_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_message_callback_update, res)
+                        f"exit from {self.handle_message_callback_update} with result={res}"
                     )
                 elif isinstance(update, MessageEditedUpdate):
-                    self.lgz.debug("entry to %s" % self.handle_message_edited_update)
+                    self.lgz.debug(f"entry to {self.handle_message_edited_update}")
                     res = self.handle_message_edited_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_message_edited_update, res)
+                        f"exit from {self.handle_message_edited_update} with result={res}"
                     )
                 elif isinstance(update, MessageRemovedUpdate):
-                    self.lgz.debug("entry to %s" % self.handle_message_removed_update)
+                    self.lgz.debug(f"entry to {self.handle_message_removed_update}")
                     res = self.handle_message_removed_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_message_removed_update, res)
+                        f"exit from {self.handle_message_removed_update} with result={res}"
                     )
                 elif isinstance(update, BotStartedUpdate):
-                    self.lgz.debug("entry to %s" % self.handle_bot_started_update)
+                    self.lgz.debug(f"entry to {self.handle_bot_started_update}")
                     res = self.handle_bot_started_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_bot_started_update, res)
+                        f"exit from {self.handle_bot_started_update} with result={res}"
                     )
                 elif isinstance(update, BotAddedToChatUpdate):
-                    self.lgz.debug("entry to %s" % self.handle_bot_added_to_chat_update)
+                    self.lgz.debug(f"entry to {self.handle_bot_added_to_chat_update}")
                     res = self.handle_bot_added_to_chat_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_bot_added_to_chat_update, res)
+                        f"exit from {self.handle_bot_added_to_chat_update} with result={res}"
                     )
                 elif isinstance(update, BotRemovedFromChatUpdate):
                     self.lgz.debug(
-                        "entry to %s" % self.handle_bot_removed_from_chat_update
+                        f"entry to {self.handle_bot_removed_from_chat_update}"
                     )
                     res = self.handle_bot_removed_from_chat_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_bot_removed_from_chat_update, res)
+                        f"exit from {self.handle_bot_removed_from_chat_update} with result={res}"
                     )
                 elif isinstance(update, UserAddedToChatUpdate):
                     self.lgz.debug(
-                        "entry to %s" % self.handle_user_added_to_chat_update
+                        f"entry to {self.handle_user_added_to_chat_update}"
                     )
                     res = self.handle_user_added_to_chat_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_user_added_to_chat_update, res)
+                        f"exit from {self.handle_user_added_to_chat_update} with result={res}"
                     )
                 elif isinstance(update, UserRemovedFromChatUpdate):
                     self.lgz.debug(
-                        "entry to %s" % self.handle_user_removed_from_chat_update
+                        f"entry to {self.handle_user_removed_from_chat_update}"
                     )
                     res = self.handle_user_removed_from_chat_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_user_removed_from_chat_update, res)
+                        f"exit from {self.handle_user_removed_from_chat_update} with result={res}"
                     )
                 elif isinstance(update, ChatTitleChangedUpdate):
                     self.lgz.debug(
-                        "entry to %s" % self.handle_chat_title_changed_update
+                        f"entry to {self.handle_chat_title_changed_update}"
                     )
                     res = self.handle_chat_title_changed_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_chat_title_changed_update, res)
+                        f"exit from {self.handle_chat_title_changed_update} with result={res}"
                     )
                 elif isinstance(update, MessageChatCreatedUpdate):
                     self.lgz.debug(
-                        "entry to %s" % self.handle_message_chat_created_update
+                        f"entry to {self.handle_message_chat_created_update}"
                     )
                     res = self.handle_message_chat_created_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_message_chat_created_update, res)
+                        f"exit from {self.handle_message_chat_created_update} with result={res}"
                     )
                 elif isinstance(update, MessageConstructionRequest):
                     self.lgz.debug(
-                        "entry to %s" % self.handle_message_construction_request
+                        f"entry to {self.handle_message_construction_request}"
                     )
                     res = self.handle_message_construction_request(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_message_construction_request, res)
+                        f"exit from {self.handle_message_construction_request} with result={res}"
                     )
                 elif isinstance(update, MessageConstructedUpdate):
                     self.lgz.debug(
-                        "entry to %s" % self.handle_message_constructed_update
+                        f"entry to {self.handle_message_constructed_update}"
                     )
                     res = self.handle_message_constructed_update(update)
                     self.lgz.debug(
-                        "exit from %s with result=%s"
-                        % (self.handle_message_constructed_update, res)
+                        f"exit from {self.handle_message_constructed_update} with result={res}"
                     )
                 else:
                     res = False
@@ -522,7 +506,7 @@ class MaxBot(object):
         # Проверка на ответ команде
         update_previous = self.prev_step_get(update.index)
         if isinstance(update_previous, Update):
-            self.lgz.debug("Command answer detected (%s)." % update.index)
+            self.lgz.debug(f"Command answer detected ({update.index}).")
             # Если это ответ на вопрос команды, то установить соответствующий признак и снова вызвать команду
             update.this_cmd_response = True
             update.update_previous = update_previous
@@ -531,7 +515,7 @@ class MaxBot(object):
             try:
                 if self.waiting_msg and update.chat_type == ChatType.DIALOG:
                     msg_t = (
-                        ("{%s} " % self.title)
+                        (f"{{{self.title}}} ")
                         + _("Wait for process your request (%s)...")
                         % update_previous.cmd
                     ) + self.SERVICE_STR_SEQUENCE
@@ -544,7 +528,7 @@ class MaxBot(object):
                 if isinstance(res_w_m, SendMessageResult):
                     self.msg.delete_message(res_w_m.message.body.mid)
             return res
-        self.lgz.debug("Trivial message. Not commands answer (%s)." % update.index)
+        self.lgz.debug(f"Trivial message. Not commands answer ({update.index}).")
         return self.receive_message(update)
 
     def receive_message(self, update):
@@ -566,7 +550,7 @@ class MaxBot(object):
             self.callbacks_list[ind] = [update.callback.timestamp]
 
         if update.callback.payload:
-            self.lgz.debug("MessageCallbackUpdate:\r\n%s" % update.callback.payload)
+            self.lgz.debug(f"MessageCallbackUpdate:\r\n{update.callback.payload}")
             res = self.process_command(update)
             if res:
                 self.delete_message(update.message.body.mid)
@@ -582,6 +566,7 @@ class MaxBot(object):
             return self.msg.send_message(
                 NewMessageBody("отредактировал сообщение"), chat_id=chat.chat_id
             )
+        return None
         # pass
 
     def handle_message_removed_update(self, update):
@@ -678,6 +663,7 @@ class MaxBot(object):
                 and ChatAdminPermission.WRITE in ap
                 and ChatAdminPermission.READ_ALL_MESSAGES in ap
             )
+        return None
 
     @staticmethod
     def adm_permission_add(ce_ap, adm_perm):
@@ -706,11 +692,12 @@ class MaxBot(object):
                 )
             except ApiException as e:
                 return (
-                    "Error: %s (%s|%s) -> %s" % (user_id, chat.chat_id, chat.title, e)
+                    f"Error: {user_id} ({chat.chat_id}|{chat.title}) -> {e}"
                     + title
                 )
         if user:
-            return "%s (%s|%s) -> " % (user.user_id, user.name, user.username) + title
+            return f"{user.user_id} ({user.name}|{user.username}) -> " + title
+        return None
 
     # Определяет доступность чата для пользователя
     def chat_is_available(self, chat, user_id):
@@ -734,13 +721,11 @@ class MaxBot(object):
                                     if err.status != 404:
                                         raise
                                     self.lgz.debug(
-                                        "chat => chat_id=%(id)s - pass, because user %(user_id)s not found"
-                                        % {"id": chat.chat_id, "user_id": user_id}
+                                        f"chat => chat_id={chat.chat_id} - pass, because user {user_id} not found"
                                     )
                             else:
                                 self.lgz.debug(
-                                    "chat => chat_id=%(id)s - pass, because bot not admin"
-                                    % {"id": chat.chat_id}
+                                    f"chat => chat_id={chat.chat_id} - pass, because bot not admin"
                                 )
                                 return None
                 except ApiException as err:
@@ -770,8 +755,7 @@ class MaxBot(object):
                                 )
                             else:
                                 self.lgz.debug(
-                                    "Pass, because bot with id=%s not found into chat %s members list"
-                                    % (self.user_id, chat.chat_id)
+                                    f"Pass, because bot with id={self.user_id} not found into chat {chat.chat_id} members list"
                                 )
                     elif chat.type == ChatType.DIALOG:
                         current_user = chat.dialog_with_user
@@ -791,26 +775,22 @@ class MaxBot(object):
                             ]
                         else:
                             self.lgz.debug(
-                                "Exit, because dialog_id=%s not for user_id=%s"
-                                % (chat.chat_id, user_id)
+                                f"Exit, because dialog_id={chat.chat_id} not for user_id={user_id}"
                             )
                     if chat_ext and chat_ext.admin_permissions:
                         return chat_ext
-                    else:
-                        self.lgz.debug(
-                            "Pass, because for user_id=%s  not admin permissions into chat_id=%s"
-                            % (user_id, chat.chat_id)
-                        )
+                    self.lgz.debug(
+                        f"Pass, because for user_id={user_id}  not admin permissions into chat_id={chat.chat_id}"
+                    )
                 else:
                     self.lgz.debug(
-                        "Pass, because for user_id=%s  not enough permissions into chat_id=%s"
-                        % (user_id, chat.chat_id)
+                        f"Pass, because for user_id={user_id}  not enough permissions into chat_id={chat.chat_id}"
                     )
             else:
                 self.lgz.debug(
-                    "chat => chat_id=%(id)s - pass, because bot not active"
-                    % {"id": chat.chat_id}
+                    f"chat => chat_id={chat.chat_id} - pass, because bot not active"
                 )
+        return None
 
     # Формирует список чатов пользователя, в которых админы и он и бот с доп проверкой разрешений
     def get_users_chats_with_bot(self, user_id):
@@ -831,15 +811,7 @@ class MaxBot(object):
                 marker = chat_list.marker
                 for chat in chat_list.chats:
                     self.lgz.debug(
-                        "Found chat => chat_id=%(id)s; type: %(type)s; status: %(status)s; title: %(title)s; participants: %(participants)s; owner: %(owner)s"
-                        % {
-                            "id": chat.chat_id,
-                            "type": chat.type,
-                            "status": chat.status,
-                            "title": chat.title,
-                            "participants": chat.participants_count,
-                            "owner": chat.owner_id,
-                        }
+                        f"Found chat => chat_id={chat.chat_id}; type: {chat.type}; status: {chat.status}; title: {chat.title}; participants: {chat.participants_count}; owner: {chat.owner_id}"
                     )
                     chat_ext = self.chat_is_available(chat, user_id)
                     if chat_ext and (
@@ -847,8 +819,7 @@ class MaxBot(object):
                     ):
                         chats_available[chat.chat_id] = chat_ext
                         self.lgz.debug(
-                            "chat => chat_id=%(id)s added into list available chats"
-                            % {"id": chat.chat_id}
+                            f"chat => chat_id={chat.chat_id} added into list available chats"
                         )
                 if not marker:
                     break
@@ -897,15 +868,7 @@ class MaxBot(object):
                 marker = chat_list.marker
                 for chat in chat_list.chats:
                     self.lgz.debug(
-                        "Found chat => chat_id=%(id)s; type: %(type)s; status: %(status)s; title: %(title)s; participants: %(participants)s; owner: %(owner)s"
-                        % {
-                            "id": chat.chat_id,
-                            "type": chat.type,
-                            "status": chat.status,
-                            "title": chat.title,
-                            "participants": chat.participants_count,
-                            "owner": chat.owner_id,
-                        }
+                        f"Found chat => chat_id={chat.chat_id}; type: {chat.type}; status: {chat.status}; title: {chat.title}; participants: {chat.participants_count}; owner: {chat.owner_id}"
                     )
                     if chat.status not in [ChatStatus.ACTIVE]:
                         continue
@@ -984,8 +947,7 @@ class MaxBot(object):
                                     )
                     else:
                         self.lgz.debug(
-                            "Pass, because for chat_id=%s bot (id=%s) is not admin"
-                            % (chat.chat_id, self.user_id)
+                            f"Pass, because for chat_id={chat.chat_id} bot (id={self.user_id}) is not admin"
                         )
                 if not marker:
                     break
@@ -993,12 +955,10 @@ class MaxBot(object):
 
     @staticmethod
     def limited_buttons_index(**kwargs):
-        """
-
-        :rtype: str
-        """
+        """:rtype: str"""
         if "mid" in kwargs:
             return kwargs["mid"]
+        return None
 
     @staticmethod
     def limited_buttons_get(index):
@@ -1199,11 +1159,10 @@ class MaxBot(object):
         res = None
         if mid:
             self.msg.edit_message(mid, mb)
+        elif chat_id:
+            res = self.msg.send_message(mb, chat_id=chat_id)
         else:
-            if chat_id:
-                res = self.msg.send_message(mb, chat_id=chat_id)
-            else:
-                res = self.msg.send_message(mb, user_id=user_id)
+            res = self.msg.send_message(mb, user_id=user_id)
 
         if isinstance(res, SendMessageResult):
             mid = res.message.body.mid
@@ -1251,7 +1210,7 @@ class MaxBot(object):
                 m_t = lim_notify
                 if lim_notify_g and num_subscribers_cur > lim_items:
                     m_t += "\n" + lim_notify_g
-                title = "%s\n\n{m_t}" % title
+                title = f"{title}\n\n{{m_t}}"
         return self.view_buttons(
             title,
             buttons,
@@ -1297,12 +1256,8 @@ class MaxBot(object):
         res = []
         for bt in cbc:
             res.append(bt)
-        if orientation == "horizontal":
-            res = [res]
-        else:
-            res = [[_] for _ in res]
+        return [res] if orientation == "horizontal" else [[_] for _ in res]
 
-        return res
 
     def upload_content(self, content, upload_type, content_name=None):
         # type: ([], str, str) -> dict
@@ -1312,7 +1267,7 @@ class MaxBot(object):
                 upload_ep.url,
                 files={
                     "files": (
-                        "file" if not content_name else content_name,
+                        content_name if content_name else "file",
                         content,
                         "multipart/form-data",
                     )
@@ -1321,11 +1276,12 @@ class MaxBot(object):
             )
             if rdf.status_code == 200:
                 return rdf.json()
+        return None
 
     def attach_contents(self, items):
         # type: ([(bytes, str)]) -> []
         if not items:
-            return
+            return None
         attachments = []
         for item in items:
             klass = None
@@ -1361,7 +1317,6 @@ class MaxBot(object):
                  If the method is called asynchronously,
                  returns the request thread.
         """
-
         rpt = 0
         while rpt < max_retry:
             try:
@@ -1372,20 +1327,20 @@ class MaxBot(object):
                 return res_msg
             except ApiException as e:
                 self.lgz.debug(
-                    "Warning: status:%(status)s; reason:%(reason)s; body:%(body)s"
-                    % {"status": e.status, "reason": e.reason, "body": e.body}
+                    f"Warning: status:{e.status}; reason:{e.reason}; body:{e.body}"
                 )
                 if rpt >= max_retry or not (
-                    e.status == 400
-                    and e.body.find('"code":"attachment.not.ready"') >= 0
+                    (e.status == 400
+                    and e.body.find('"code":"attachment.not.ready"') >= 0)
                     or e.status == 429
                 ):
                     raise
                 slt = sl_time
                 if e.status == 429:  # too.many.requests
                     slt = 2
-                self.lgz.debug(str(rpt) + " sleep: %s sec." % slt)
+                self.lgz.debug(str(rpt) + f" sleep: {slt} sec.")
                 sleep(slt)
+        return None
 
     # noinspection PyIncorrectDocstring
     def send_message_long_text(self, mb, long_text, max_retry=20, sl_time=1, **kwargs):
@@ -1534,12 +1489,14 @@ class MaxBot(object):
             and message.link.type in [MessageLinkType.FORWARD]
         ):
             return message.link
+        return None
 
     def get_forwarded_message_full(self, message):
         # type: (Message) -> Message
         lm = self.get_forwarded_message(message)
         if isinstance(lm, LinkedMessage) and lm.message:
             return self.get_message(lm.message.mid)
+        return None
 
     def subscribe(self, url_list, adding=False):
         # type:(MaxBot, [str], bool) -> bool
@@ -1553,21 +1510,21 @@ class MaxBot(object):
                         res = self.subscriptions.unsubscribe(subscription.url)
                         if isinstance(res, SimpleQueryResult) and not res.success:
                             self.lgz.warning(
-                                "Failed delete subscribe url=%s" % subscription.url
+                                f"Failed delete subscribe url={subscription.url}"
                             )
                         elif isinstance(res, SimpleQueryResult) and res.success:
-                            self.lgz.info("Deleted subscribe url=%s" % subscription.url)
+                            self.lgz.info(f"Deleted subscribe url={subscription.url}")
         for url in url_list:
-            wh_info = "WebHook url=%s, version=%s" % (url, self.conf.api_version)
+            wh_info = f"WebHook url={url}, version={self.conf.api_version}"
             sb = SubscriptionRequestBody(url, version=self.conf.api_version)
             res = self.subscriptions.subscribe(sb)
             if isinstance(res, SimpleQueryResult) and not res.success:
                 raise MaxBotException(res.message)
-            elif not isinstance(res, SimpleQueryResult):
+            if not isinstance(res, SimpleQueryResult):
                 raise MaxBotException(
-                    "Something went wrong when subscribing the WebHook %s" % wh_info
+                    f"Something went wrong when subscribing the WebHook {wh_info}"
                 )
-            self.lgz.info("Bot subscribed to receive updates via WebHook %s" % wh_info)
+            self.lgz.info(f"Bot subscribed to receive updates via WebHook {wh_info}")
         return True
 
 

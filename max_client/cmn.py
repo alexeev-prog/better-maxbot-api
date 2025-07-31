@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+import contextlib
 import functools
 import hashlib
 import inspect
@@ -8,11 +9,12 @@ import os
 import re
 import sys
 import time
+from collections.abc import Callable
 from datetime import date, datetime
 from html.entities import name2codepoint
 from html.parser import HTMLParser
 from logging.handlers import RotatingFileHandler
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 from croniter import croniter
 
@@ -20,7 +22,7 @@ RT = TypeVar("RT")
 
 
 # noinspection PyUnusedLocal
-def log_dec(
+def log_dec[RT](
     func: Callable[..., RT],
     *args: object,
     **kwargs: object,  # pylint: disable=W0613
@@ -214,10 +216,8 @@ class Utils:
         i = i + (pass_cnt - 1)
         calling_function_filename = None
         if i > 0:
-            try:
+            with contextlib.suppress(IndexError):
                 calling_function_filename = sts[i].filename
-            except IndexError:
-                pass
         return calling_function_filename
 
     @staticmethod
@@ -283,6 +283,7 @@ class Utils:
         )
         if dt:
             return dt.date()
+        return None
 
     @staticmethod
     def html_to_text(html):
@@ -330,11 +331,11 @@ class Utils:
 class ExtList(list):
     def __init__(self, no_double=False):
         self.no_double = no_double
-        super(ExtList, self).__init__()
+        super().__init__()
 
     def append(self, obj):
         if not self.no_double or obj not in self:
-            super(ExtList, self).append(obj)
+            super().append(obj)
 
     def extend(self, list_add):
         if self.no_double:
@@ -342,7 +343,7 @@ class ExtList(list):
             set_add = set(list_add)
             set_add_nd = set_add - set_main
             list_add = list(set_add_nd)
-        super(ExtList, self).extend(list_add)
+        super().extend(list_add)
 
     def get(self, index):
         try:

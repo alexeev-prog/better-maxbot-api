@@ -28,7 +28,7 @@ from max_client.rest import ApiException
 
 def main_menu_buttons():
     # type: () -> []
-    buttons = [
+    return [
         {[CallbackButton("About bot", "start_test", intent=Intent.POSITIVE)]},
         [
             CallbackButton(
@@ -45,7 +45,6 @@ def main_menu_buttons():
         [RequestContactButton("Report your contact details")],
         [RequestGeoLocationButton("Report your location", True)],
     ]
-    return buttons
 
 
 def add_buttons_to_message_body(message_body, buttons):
@@ -75,6 +74,7 @@ def handle_message_created_update(update):
                 ),
                 chat_id=recipient.chat_id,
             )
+    return None
 
 
 #               return msg.send_message(NewMessageBody("Гланое menu"), chat_id=recipient.chat_id)
@@ -90,7 +90,7 @@ def handle_update(update):
             res = False
         return res
     except Exception as e:
-        print("Exception when calling handle_update: %s\n" % e)
+        print(f"Exception when calling handle_update: {e}\n")
 
 
 conf = Configuration()

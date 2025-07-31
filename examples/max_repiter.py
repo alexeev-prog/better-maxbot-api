@@ -9,7 +9,7 @@ from max_client.cmn import ExtList
 class ChatActionRequestRepeater(threading.Thread):
     def __init__(self, chats_api, chat_id):
         # type: (ChatsApi, int) -> None
-        super(ChatActionRequestRepeater, self).__init__(daemon=True)
+        super().__init__(daemon=True)
 
         self.actions = ExtList(True)
         self.stopped = False
@@ -17,9 +17,9 @@ class ChatActionRequestRepeater(threading.Thread):
         if not isinstance(chats_api, ChatsApi):
             raise ValueError(
                 "Invalid value for `chats_api`, must not be `ChatsApi` type"
-            )  # noqa: E501
+            )
         if chat_id is None:
-            raise ValueError("Invalid value for `chat_id`, must not be `None`")  # noqa: E501
+            raise ValueError("Invalid value for `chat_id`, must not be `None`")
 
         self.chats_api = chats_api
         self.chat_id = chat_id
@@ -28,9 +28,8 @@ class ChatActionRequestRepeater(threading.Thread):
         if on:
             if action_name not in self.actions:
                 self.actions.append(action_name)
-        else:
-            if action_name in self.actions:
-                self.actions.remove(action_name)
+        elif action_name in self.actions:
+            self.actions.remove(action_name)
 
     def run(self):
         while not self.stopped:

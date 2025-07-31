@@ -190,7 +190,6 @@ class MaxBot:
             [RequestGeoLocationButton(_("Report your location"), True)],
         ]
 
-
     @property
     def token(self):
         # type: () -> str
@@ -226,18 +225,14 @@ class MaxBot:
         reload(sys)
         # noinspection PyUnresolvedReferences
         sys.setdefaultencoding(encoding)
-        self.lgz.info(
-            f"The default encoding is set to {sys.getdefaultencoding()}"
-        )
+        self.lgz.info(f"The default encoding is set to {sys.getdefaultencoding()}")
 
     def check_threads(self):
         self.lgz.info(
             f"{len(MaxBot.threads)} of {MaxBot.work_threads_max_count()} threads are used."
         )
         while len(MaxBot.threads) >= MaxBot.work_threads_max_count():
-            err = (
-                f"Threads pool is full. The maximum number ({MaxBot.work_threads_max_count()}) is used. Awaiting release."
-            )
+            err = f"Threads pool is full. The maximum number ({MaxBot.work_threads_max_count()}) is used. Awaiting release."
             self.lgz.debug(err)
             threads = MaxBot.threads.copy()
             for t in threads:
@@ -458,9 +453,7 @@ class MaxBot:
             finally:
                 self.lgz.debug("exited")
         else:
-            err = (
-                f"Threads pool is full. The maximum number ({MaxBot.work_threads_max_count()}) is used."
-            )
+            err = f"Threads pool is full. The maximum number ({MaxBot.work_threads_max_count()}) is used."
             self.lgz.debug(err)
             incoming_data = self.deserialize_update(request_body)
             if isinstance(incoming_data, Update):
@@ -482,7 +475,9 @@ class MaxBot:
         try:
             if request_body:
                 self.lgz.debug(
-                    "request body:\n{}\n{}".format(request_body, request_body.decode("utf-8"))
+                    "request body:\n{}\n{}".format(
+                        request_body, request_body.decode("utf-8")
+                    )
                 )
                 request_body = self.before_handle_request_body(request_body)
                 incoming_data = self.deserialize_update(request_body)
@@ -665,9 +660,7 @@ class MaxBot:
 
     def deserialize_open_api_object(self, b_obj, response_type):
         # type: (bytes, str) -> object
-        return self.client.deserialize(
-            urllib3.HTTPResponse(b_obj), response_type
-        )
+        return self.client.deserialize(urllib3.HTTPResponse(b_obj), response_type)
 
     def serialize_open_api_object(self, obj):
         # type: (object) -> str
@@ -738,9 +731,7 @@ class MaxBot:
                     )
                 elif isinstance(update, MessageCreatedUpdate):
                     if not self.update_is_service(UpdateCmn(update, self)):
-                        self.lgz.debug(
-                            f"entry to {self.handle_message_created_update}"
-                        )
+                        self.lgz.debug(f"entry to {self.handle_message_created_update}")
                         res = self.handle_message_created_update(update)
                         self.lgz.debug(
                             f"exit from {self.handle_message_created_update} with result={res}"
@@ -787,9 +778,7 @@ class MaxBot:
                         f"exit from {self.handle_bot_removed_from_chat_update} with result={res}"
                     )
                 elif isinstance(update, UserAddedToChatUpdate):
-                    self.lgz.debug(
-                        f"entry to {self.handle_user_added_to_chat_update}"
-                    )
+                    self.lgz.debug(f"entry to {self.handle_user_added_to_chat_update}")
                     res = self.handle_user_added_to_chat_update(update)
                     self.lgz.debug(
                         f"exit from {self.handle_user_added_to_chat_update} with result={res}"
@@ -803,9 +792,7 @@ class MaxBot:
                         f"exit from {self.handle_user_removed_from_chat_update} with result={res}"
                     )
                 elif isinstance(update, ChatTitleChangedUpdate):
-                    self.lgz.debug(
-                        f"entry to {self.handle_chat_title_changed_update}"
-                    )
+                    self.lgz.debug(f"entry to {self.handle_chat_title_changed_update}")
                     res = self.handle_chat_title_changed_update(update)
                     self.lgz.debug(
                         f"exit from {self.handle_chat_title_changed_update} with result={res}"
@@ -827,9 +814,7 @@ class MaxBot:
                         f"exit from {self.handle_message_construction_request} with result={res}"
                     )
                 elif isinstance(update, MessageConstructedUpdate):
-                    self.lgz.debug(
-                        f"entry to {self.handle_message_constructed_update}"
-                    )
+                    self.lgz.debug(f"entry to {self.handle_message_constructed_update}")
                     res = self.handle_message_constructed_update(update)
                     self.lgz.debug(
                         f"exit from {self.handle_message_constructed_update} with result={res}"
@@ -1042,10 +1027,7 @@ class MaxBot:
                     else self.chats.get_chat(chat.chat_id).dialog_with_user
                 )
             except ApiException as e:
-                return (
-                    f"Error: {user_id} ({chat.chat_id}|{chat.title}) -> {e}"
-                    + title
-                )
+                return f"Error: {user_id} ({chat.chat_id}|{chat.title}) -> {e}" + title
         if user:
             return f"{user.user_id} ({user.name}|{user.username}) -> " + title
         return None
@@ -1609,7 +1591,6 @@ class MaxBot:
             res.append(bt)
         return [res] if orientation == "horizontal" else [[_] for _ in res]
 
-
     def upload_content(self, content, upload_type, content_name=None):
         # type: ([], str, str) -> dict
         upload_ep = self.upload.get_upload_url(type=upload_type)
@@ -1681,8 +1662,10 @@ class MaxBot:
                     f"Warning: status:{e.status}; reason:{e.reason}; body:{e.body}"
                 )
                 if rpt >= max_retry or not (
-                    (e.status == 400
-                    and e.body.find('"code":"attachment.not.ready"') >= 0)
+                    (
+                        e.status == 400
+                        and e.body.find('"code":"attachment.not.ready"') >= 0
+                    )
                     or e.status == 429
                 ):
                     raise

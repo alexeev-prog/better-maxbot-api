@@ -1,4 +1,3 @@
-
 # noinspection SpellCheckingInspection
 r"""
 Max Bot API.
@@ -58,7 +57,9 @@ class EmphasizedMarkup(MarkupElement):
         for attr, _ in six.iteritems(self.openapi_types):
             value = getattr(self, attr)
             if isinstance(value, list):
-                result[attr] = [x.to_dict() if hasattr(x, "to_dict") else x for x in value]
+                result[attr] = [
+                    x.to_dict() if hasattr(x, "to_dict") else x for x in value
+                ]
             elif hasattr(value, "to_dict"):
                 result[attr] = value.to_dict()
             elif isinstance(value, dict):

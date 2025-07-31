@@ -59,13 +59,15 @@ def convert_tabs(file_path, tab_size, conversion_type):
             print(f"{BOLD}Converting tabs to spaces...{NC}")
             subprocess.run(
                 ["expand", "-t", str(tab_size), file_path],
-                check=False, stdout=open(f"{file_path}.tmp", "w"),
+                check=False,
+                stdout=open(f"{file_path}.tmp", "w"),
             )
         elif conversion_type == "tabs":
             print(f"{BOLD}Converting spaces to tabs...{NC}")
             subprocess.run(
                 ["unexpand", "-t", str(tab_size), file_path],
-                check=False, stdout=open(f"{file_path}.tmp", "w"),
+                check=False,
+                stdout=open(f"{file_path}.tmp", "w"),
             )
         else:
             print_error(

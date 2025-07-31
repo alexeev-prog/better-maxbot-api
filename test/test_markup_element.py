@@ -1,4 +1,3 @@
-
 r"""
 Max Bot API.
 
@@ -6,7 +5,6 @@ Max Bot API.
 
 OpenAPI spec version: 0.0.10
 """
-
 
 import unittest
 

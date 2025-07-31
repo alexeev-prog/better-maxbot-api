@@ -27,7 +27,8 @@ class TtUtils:
         content = content or ""
         parameter = parameter or ""
         found = re.match(
-            ".*({}{}=(.+?){}).*".format("\\" + ends[0], parameter, "\\" + ends[1]), content
+            ".*({}{}=(.+?){}).*".format("\\" + ends[0], parameter, "\\" + ends[1]),
+            content,
         )
         if found:
             return found.group(2)

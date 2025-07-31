@@ -6,7 +6,6 @@ Max Bot API.
 OpenAPI spec version: 0.0.10
 """
 
-
 import datetime
 import json
 import mimetypes

@@ -1,4 +1,3 @@
-
 r"""
 Max Bot API.
 
@@ -6,7 +5,6 @@ Max Bot API.
 
 OpenAPI spec version: 0.0.10
 """
-
 
 import re  # noqa: F401
 
@@ -72,8 +70,7 @@ class BotsApi:
         for key, val in six.iteritems(local_var_params["kwargs"]):
             if key not in all_params:
                 raise TypeError(
-                    f"Got an unexpected keyword argument '{key}'"
-                    " to method edit_my_info"
+                    f"Got an unexpected keyword argument '{key}' to method edit_my_info"
                 )
             local_var_params[key] = val
         del local_var_params["kwargs"]
@@ -174,8 +171,7 @@ class BotsApi:
         for key, val in six.iteritems(local_var_params["kwargs"]):
             if key not in all_params:
                 raise TypeError(
-                    f"Got an unexpected keyword argument '{key}'"
-                    " to method get_my_info"
+                    f"Got an unexpected keyword argument '{key}' to method get_my_info"
                 )
             local_var_params[key] = val
         del local_var_params["kwargs"]
